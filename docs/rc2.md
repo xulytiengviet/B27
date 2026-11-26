@@ -1,0 +1,4 @@
+# RC2 evidence requirements
+B27T replaces B27S writing: magic B27T, length-prefixed B27N frames, zero length, u64 BE original length, u64 BE frame count, SHA-256 of concatenated original bytes. B27S remains readable but lacks a whole-stream digest. SHA-256 detects accidental corruption, not intentional rewriting by an adversary who recomputes hashes. Streaming CLI deletes output on reported failure; library callers must treat output as provisional until success.
+WASM ops 4 JSON CVNSS API, 5 stream encode, 6 stream decode (limit argument). Browser buffers whole input and output, not constant-memory streaming.
+Stable is blocked until exact-commit CI, API parity, one million deterministic malformed-input tests, committed Cargo.lock, independent security review, reproducible binary builds, deployed WASM verification and corpus CPU/RAM benchmarks. Cargo audit is dependency screening only; it does not certify security.

@@ -12,6 +12,12 @@ jobs:
       - uses: actions/checkout@v4
       - run: cargo test --manifest-path native-rust/Cargo.toml
       - run: cargo build --release --manifest-path native-rust/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b27-native-${{ matrix.os }}
+          path: |
+            native-rust/target/release/b27
+            native-rust/target/release/b27.exe
   wasm:
     runs-on: ubuntu-latest
     steps:
@@ -23,6 +29,7 @@ jobs:
       - run: cargo build --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
       - run: node test-wasm.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
       - run: node test-interop.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
+      - run: node test-api.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
       - uses: actions/upload-artifact@v4
         with:
           name: b27-wasm

@@ -1,0 +1,29 @@
+name: B27 Stable evidence
+on: [workflow_dispatch, push]
+permissions:
+  contents: read
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: cargo generate-lockfile --manifest-path native-rust/Cargo.toml
+      - run: cargo test --locked --manifest-path native-rust/Cargo.toml
+      - run: cargo build --locked --release --manifest-path native-rust/Cargo.toml
+      - run: cargo run --locked --release --manifest-path native-rust/Cargo.toml --bin fuzz_gate > fuzz.json
+      - run: rustup target add wasm32-unknown-unknown
+      - run: cargo build --locked --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
+      - run: node test-api.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
+      - run: cargo install cargo-audit --locked
+      - run: cargo audit --file native-rust/Cargo.lock
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stable-evidence
+          path: |
+            fuzz.json
+            native-rust/Cargo.lock
+            native-rust/target/release/b27
+            native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
