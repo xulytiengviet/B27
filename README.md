@@ -1,32 +1,18 @@
-# B27 — BILA-T27
+# B27 — BILA-T27 v0.6 RC3
+Vietnamese linguistic-aware lossless compression: CVNSS4.0, Base27, ternary Huffman, LZ27, Markov3 and arithmetic coding. Rust native and WASM. Research release candidate; no claim of superiority to LZMA2.
 
-Nén không mất dữ liệu tiếng Việt | CVNSS4.0 + Base27 + balanced ternary.
-
-## Dùng thử
-Node.js 22, không cần npm.
+## Native
 ```sh
-git clone https://github.com/xulytiengviet/B27.git
-cd B27
-node b27.cjs c input.txt input.b27
-node b27.cjs d input.b27 restored.txt
-node test.cjs
-node test.cjs corpus.txt
-python benchmark.py corpus.txt
+cargo test --manifest-path native-rust/Cargo.toml
+cargo build --release --manifest-path native-rust/Cargo.toml
+native-rust/target/release/b27 c input.txt output.b27 9
+native-rust/target/release/b27 d output.b27 restored.txt
+native-rust/target/release/b27 cs input.txt output.b27t 6
+native-rust/target/release/b27 ds-strict output.b27t restored.txt
 ```
-File đích phải chưa tồn tại; đầu vào tối đa 16 MiB.
+Single container original input limit 16 MiB; native streaming uses 256 KiB blocks. Strict streaming requires B27T; legacy B27S has no whole-stream digest. No overwrite. SHA-256 is integrity, not authentication.
 
-## Kiến trúc v0.1
-- CVNSS converter 5.0.0-audit-safe: chỉ mã hóa âm tiết chữ thường nếu giải mã chính xác; giữ nguyên mọi phần không thuận nghịch.
-- Base27: a–z và space, 3 trit cân bằng; đóng gói 5 ký hiệu / 3 byte.
-- Backend DEFLATE, không phải LZ27/Range27 độc lập. Auto chọn raw, DEFLATE gốc hoặc DEFLATE sau biến đổi CVNSS có/không pack.
-- B27F: magic 4 byte, mode 1 byte, original length uint32 BE, SHA-256 32 byte, payload. Record: tag 1 byte, length uint32 BE, data. Tag 0 raw, 1 packed, 2 ASCII CVNSS. SHA-256 kiểm tra toàn vẹn, không xác thực nguồn.
-- Bản v0.1 cần cùng converter đã cung cấp để giải mã.
+[Web Studio](https://xulytiengviet.github.io/B27/web-studio.html) · [CI](https://github.com/xulytiengviet/B27/actions) · [Format draft](FORMAT_SPEC.md) · [RC3 acceptance](docs/rc3.md) · [Security](SECURITY.md)
 
-## Nghiệm thu
-1. 100% byte-for-byte trên bộ test, converter selfTest, 27 ký hiệu, Unicode NFC/NFD, dữ liệu nhị phân giả ngẫu nhiên và checksum lỗi.
-2. CI Windows/Linux/macOS; artifact benchmark JSON.
-3. So sánh B27-auto, B27-CVNSS, DEFLATE và Brotli trên cùng đầu vào. Python benchmark thêm XZ/LZMA2. Thời gian CLI so với in-process không công bằng; không dùng để chứng minh CPU thấp hơn.
-4. Giả thuyết hiệu năng chỉ được chấp nhận khi corpus tiếng Việt độc lập, công bố hash và cấu hình máy, có đối chứng cùng điều kiện và số liệu kích thước, CPU, RAM. Mục tiêu đề xuất: giảm ít nhất 5% kích thước và 10% CPU trên corpus giữ lại so với baseline đã đăng ký trước; nếu không đạt, báo FAIL. Không dùng dữ liệu tổng hợp lặp lại để suy rộng.
-5. Không tuyên bố 100% nghiệm thu toàn dự án khi CI hoặc giả thuyết hiệu năng chưa được kiểm chứng.
-
-[Trang giới thiệu (cần bật Pages từ main/root)](https://xulytiengviet.github.io/B27/) · [CI](https://github.com/xulytiengviet/B27/actions)
+JavaScript reference: node native.cjs c|d input output. Legacy B27F: node b27.cjs. Native supports B27F/B27N reads and B27T streaming.
+Benchmarks: python3 bench-native.py corpus.txt (Linux GNU time and xz). The CI smoke corpus is synthetic only; independent corpus and full security review remain mandatory for scientific acceptance.

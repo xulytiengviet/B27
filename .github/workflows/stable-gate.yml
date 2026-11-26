@@ -11,12 +11,23 @@ jobs:
         with:
           node-version: '22'
       - run: cargo generate-lockfile --manifest-path native-rust/Cargo.toml
+      - run: rustc -Vv > toolchain.txt
       - run: cargo test --locked --manifest-path native-rust/Cargo.toml
       - run: cargo build --locked --release --manifest-path native-rust/Cargo.toml
       - run: cargo run --locked --release --manifest-path native-rust/Cargo.toml --bin fuzz_gate > fuzz.json
       - run: rustup target add wasm32-unknown-unknown
       - run: cargo build --locked --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
       - run: node test-api.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
+      - run: |
+          cp native-rust/target/release/b27 /tmp/b27-first
+          cargo clean --manifest-path native-rust/Cargo.toml
+          cargo build --locked --release --manifest-path native-rust/Cargo.toml
+          cmp /tmp/b27-first native-rust/target/release/b27
+          sha256sum /tmp/b27-first native-rust/target/release/b27 > reproducibility.txt
+          cargo build --locked --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
+      - run: |
+          python3 -c "from pathlib import Path; Path('smoke-corpus.txt').write_text(('Tiếng Việt có dấu. Dữ liệu kiểm thử tổng hợp, không phải corpus độc lập.\\n'*10000), encoding='utf-8')"
+          python3 bench-native.py smoke-corpus.txt > benchmark-smoke.json
       - run: cargo install cargo-audit --locked
       - run: cargo audit --file native-rust/Cargo.lock
       - uses: actions/upload-artifact@v4
@@ -24,6 +35,9 @@ jobs:
           name: stable-evidence
           path: |
             fuzz.json
+            toolchain.txt
+            reproducibility.txt
+            benchmark-smoke.json
             native-rust/Cargo.lock
             native-rust/target/release/b27
             native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
