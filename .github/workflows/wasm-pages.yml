@@ -22,7 +22,8 @@ jobs:
       - run: cargo build --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
       - run: node test-api.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
       - run: node test-interop.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
-      - run: mkdir site && cp index.html web-studio.html site/ && cp native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm site/
+      - run: mkdir site && cp index.html web-studio.html dos.css evidence.js site/ && cp native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm site/
+      - run: python3 -c "import hashlib,json,os,pathlib; p=pathlib.Path('site/b27_primitives.wasm'); pathlib.Path('site/build.json').write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'wasm_sha256':hashlib.sha256(p.read_bytes()).hexdigest()}))"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -37,3 +38,6 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
       - run: curl --fail --retry 5 --retry-all-errors -o deployed.wasm https://xulytiengviet.github.io/B27/b27_primitives.wasm && node -e "const b=require('fs').readFileSync('deployed.wasm');if(!WebAssembly.validate(b))process.exit(1)"
+      - run: |
+          curl --fail --retry 5 --retry-all-errors -o build.json https://xulytiengviet.github.io/B27/build.json
+          python3 -c "import json,hashlib,os; m=json.load(open('build.json')); assert m['commit']==os.environ['GITHUB_SHA']; assert m['wasm_sha256']==hashlib.sha256(open('deployed.wasm','rb').read()).hexdigest()"
