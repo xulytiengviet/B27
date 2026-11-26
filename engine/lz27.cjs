@@ -1,0 +1,5 @@
+'use strict';
+// Bounded dictionary LZSS over bytes (including packed Base27 records).
+function encode(b){let out=[],map=new Map();const key=i=>i+2<b.length?(b[i]<<16)|(b[i+1]<<8)|b[i+2]:-1;function add(i){const k=key(i);if(k>=0)map.set(k,i)}for(let i=0;i<b.length;){const flags=out.length;out.push(0);for(let j=0;j<8&&i<b.length;j++){const p=map.get(key(i)),d=i-p;let n=0;if(p!==undefined&&d>0&&d<=65535){while(n<258&&i+n<b.length&&b[p+n]===b[i+n])n++}if(n>=3){out[flags]|=1<<j;out.push(d>>>8,d&255,n-3);for(let k=0;k<n;k++)add(i+k);i+=n}else{out.push(b[i]);add(i++)}}}return Buffer.from(out)}
+function decode(b,limit){let out=[];for(let i=0;i<b.length;){const f=b[i++];if(i===b.length)throw Error('empty group');for(let j=0;j<8&&i<b.length;j++){if(f&(1<<j)){if(i+3>b.length)throw Error('match');const d=b[i]*256+b[i+1],n=b[i+2]+3;i+=3;if(!d||d>out.length||out.length+n>limit)throw Error('distance/limit');for(let k=0;k<n;k++)out.push(out[out.length-d])}else{if(out.length>=limit)throw Error('limit');out.push(b[i++])}}}return Buffer.from(out)}
+module.exports={encode,decode};
