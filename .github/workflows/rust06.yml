@@ -1,0 +1,28 @@
+name: B27 v0.6 Rust WASM
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --manifest-path native-rust/Cargo.toml
+      - run: cargo build --release --manifest-path native-rust/Cargo.toml
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: rustup target add wasm32-unknown-unknown
+      - run: cargo build --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
+      - run: node test-wasm.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b27-wasm
+          path: native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
