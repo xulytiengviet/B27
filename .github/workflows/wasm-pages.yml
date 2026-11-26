@@ -1,0 +1,39 @@
+name: B27 WASM Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: b27-pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: rustup target add wasm32-unknown-unknown
+      - run: cargo build --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
+      - run: node test-api.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
+      - run: node test-interop.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
+      - run: mkdir site && cp index.html web-studio.html site/ && cp native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - run: curl --fail --retry 5 --retry-all-errors -o deployed.wasm https://xulytiengviet.github.io/B27/b27_primitives.wasm && node -e "const b=require('fs').readFileSync('deployed.wasm');if(!WebAssembly.validate(b))process.exit(1)"
