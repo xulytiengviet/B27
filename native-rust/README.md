@@ -1,8 +1,12 @@
-# B27 v0.6-alpha — Rust/WASM codec
-Native raw B27N profiles 0/1/4/7, auto 255. Huffman3, LZ27, Markov3 arithmetic coding, SHA-256. Payload API supports all B27N profile numbers for use with the existing JS CVNSS transform/inverse. Standalone Rust CLI rejects linguistic profiles and B27F explicitly; use native.cjs for those. No claim of full native CVNSS compatibility or streaming yet.
+# B27 v0.6 release candidate
+Native CQN/CVSS rules and all B27N profiles; legacy B27F decode; block streaming B27S. Public JS inspection API not fully ported. See [acceptance gates](../docs/v06-acceptance.md).
 
-    cargo test --manifest-path native-rust/Cargo.toml
-    cargo run --release --manifest-path native-rust/Cargo.toml --bin b27 -- c input.txt output.b27 auto
-    cargo run --release --manifest-path native-rust/Cargo.toml --bin b27 -- d output.b27 restored.txt
-
-WASM: build with --lib --target wasm32-unknown-unknown, run test-wasm.cjs with resulting wasm path. ABI: b27_input(length), write memory, b27_run(op,mode,limit), copy output_ptr/output_len. op 0/1 container, 2/3 payload. Return 0 success, -1 failure. Reacquire memory view after calls. Buffers are owned by module. Input cap 16 MiB for container compression. Security audit, fair benchmarks, full native CVNSS ruleset, streaming and fuzzing remain release gates.
+```sh
+cargo test --manifest-path native-rust/Cargo.toml
+cargo build --release --manifest-path native-rust/Cargo.toml
+cargo run --release --manifest-path native-rust/Cargo.toml --bin b27 -- c input.txt output.b27 9
+cargo run --release --manifest-path native-rust/Cargo.toml --bin b27 -- d output.b27 restored.txt
+cargo run --release --manifest-path native-rust/Cargo.toml --bin b27 -- cs input.txt output.b27s 6
+cargo run --release --manifest-path native-rust/Cargo.toml --bin b27 -- ds output.b27s restored.txt
+```
+WASM ABI unchanged. Browser Studio loads trusted WASM artifact. No stable release until gates pass.

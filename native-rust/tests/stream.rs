@@ -1,0 +1,4 @@
+use b27_primitives::{stream,compress,decompress,cvnss};
+#[test]fn roundtrip(){let x="Tiếng Việt oà òa uỷ ủy 😀\r\n".repeat(15000).into_bytes();let mut y=vec![];stream::encode(&x[..],&mut y,4).unwrap();let mut z=vec![];stream::decode(&y[..],&mut z,x.len()as u64).unwrap();assert_eq!(x,z);assert!(stream::decode(&y[..y.len()-1],Vec::new(),u64::MAX).is_err());assert!(stream::decode(&y[..],Vec::new(),1).is_err());}
+#[test]fn profiles(){for x in [b"".as_slice(),"tiếng việt oà òa uỷ ủy 😀".as_bytes(),&[255,0,128]]{for m in 0..10{assert_eq!(decompress(&compress(x,m).unwrap()).unwrap(),x)}}}
+#[test]fn canonical(){for (a,b) in [("toiy","tôi"),("iwy","yêu"),("vidf","việt"),("ily","yên"),("idb","yết"),("tizb","tiếng"),("wizy","nghiêng"),("ses","sẽ"),("hed","hề"),("mod","mồ"),("mof","mộ"),("vos","võ")]{assert_eq!(cvnss::convert(a,true),b)}}

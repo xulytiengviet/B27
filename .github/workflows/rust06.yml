@@ -22,6 +22,7 @@ jobs:
       - run: rustup target add wasm32-unknown-unknown
       - run: cargo build --release --lib --target wasm32-unknown-unknown --manifest-path native-rust/Cargo.toml
       - run: node test-wasm.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
+      - run: node test-interop.cjs native-rust/target/wasm32-unknown-unknown/release/b27_primitives.wasm
       - uses: actions/upload-artifact@v4
         with:
           name: b27-wasm
