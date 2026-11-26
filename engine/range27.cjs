@@ -1,0 +1,9 @@
+'use strict';
+const {Markov3}=require('./markov3.cjs');
+// 24-bit integer arithmetic coder, adaptive 3-symbol model. Six trits per byte.
+const TOP=16777215,H=8388608,Q=4194304,T=12582912;
+function encode(b){let lo=0,hi=TOP,pending=0,bytes=[],v=0,k=0;const m=new Markov3();function bit(x){v=v*2+x;if(++k===8){bytes.push(v);v=k=0}}function emit(x){bit(x);while(pending){bit(1-x);pending--}}
+for(const x of b)for(let j=5;j>=0;j--){const t=Math.floor(x/3**j)%3,c=m.cdf(),r=hi-lo+1;hi=lo+Math.floor(r*c[t+1]/c[3])-1;lo+=Math.floor(r*c[t]/c[3]);for(;;){if(hi<H)emit(0);else if(lo>=H){emit(1);lo-=H;hi-=H}else if(lo>=Q&&hi<T){pending++;lo-=Q;hi-=Q}else break;lo*=2;hi=hi*2+1}m.update(t)}
+pending++;emit(lo<Q?0:1);if(k)bytes.push(v*2**(8-k));const h=Buffer.alloc(4);h.writeUInt32BE(b.length);return Buffer.concat([h,Buffer.from(bytes)])}
+function decode(b,limit){if(b.length<5)throw Error('range header');const n=b.readUInt32BE(0);if(n>limit)throw Error('limit');let pos=32,lo=0,hi=TOP,v=0;const bit=()=>{const i=pos++;if(i>=b.length*8+24)throw Error('truncated range');return i>=b.length*8?0:(b[i>>3]>>(7-i%8))&1};for(let i=0;i<24;i++)v=v*2+bit();const m=new Markov3(),out=Buffer.alloc(n);for(let i=0;i<n;i++){let x=0;for(let j=0;j<6;j++){const c=m.cdf(),r=hi-lo+1,s=Math.floor(((v-lo+1)*c[3]-1)/r),t=s<c[1]?0:s<c[2]?1:2;hi=lo+Math.floor(r*c[t+1]/c[3])-1;lo+=Math.floor(r*c[t]/c[3]);for(;;){if(hi<H){}else if(lo>=H){lo-=H;hi-=H;v-=H}else if(lo>=Q&&hi<T){lo-=Q;hi-=Q;v-=Q}else break;lo*=2;hi=hi*2+1;v=v*2+bit()}m.update(t);x=x*3+t}if(x>255)throw Error('invalid byte');out[i]=x}return out}
+module.exports={encode,decode};
